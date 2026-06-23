@@ -1,5 +1,6 @@
 import { kebabCase } from 'lodash';
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { eq } from 'drizzle-orm';
 
 import { db } from '../../../../drizzle/db';
@@ -160,6 +161,12 @@ export async function POST(request: NextRequest) {
       const seedRegionsStats = await seedRegions();
       const seedWorkoutsStats = await seedWorkouts();
       const enrichRegionsStats = await enrichRegions();
+
+      // Invalidate stale cache so the first visitor after ingest always sees fresh data.
+      // Without this, unstable_cache stale-while-revalidate can serve a phantom workout
+      // that existed briefly during the seed phase (before the SQL dedup removed it).
+      revalidateTag('region-workouts');
+      revalidateTag('regions');
 
       const durationSec = Math.round((Date.now() - startTime) / 1000);
 
