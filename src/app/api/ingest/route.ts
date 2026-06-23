@@ -1,5 +1,6 @@
 import { kebabCase } from 'lodash';
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { eq } from 'drizzle-orm';
 
 import { db } from '../../../../drizzle/db';
@@ -160,6 +161,9 @@ export async function POST(request: NextRequest) {
       const seedRegionsStats = await seedRegions();
       const seedWorkoutsStats = await seedWorkouts();
       const enrichRegionsStats = await enrichRegions();
+
+      revalidateTag('region-workouts');
+      revalidateTag('regions');
 
       const durationSec = Math.round((Date.now() - startTime) / 1000);
 
